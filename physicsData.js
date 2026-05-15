@@ -20,6 +20,12 @@ var physicsData = [
   { id: 5,    name: 'Boost',             category: 'boost',       type: 'circle',  size: 30, sensor: true  },
   { id: 14,   name: 'RedBoost',          category: 'redBoost',    type: 'circle',  size: 30, sensor: true  },
   { id: 15,   name: 'BlueBoost',         category: 'blueBoost',   type: 'circle',  size: 30, sensor: true  },
+    { id: 10,   name: 'Bomb',              category: 'bomb',        type: 'circle',  size: 30, sensor: true  },
+
+  { id: 5.1,  name: 'BoostTaken',        category: 'boostTaken',     type: 'circle', size: 30, sensor: true },
+  { id: 14.1, name: 'RedBoostTaken',     category: 'redBoostTaken',  type: 'circle', size: 30, sensor: true },
+  { id: 15.1, name: 'BlueBoostTaken',    category: 'blueBoostTaken', type: 'circle', size: 30, sensor: true },
+  { id: 10.1, name: 'BombTaken',         category: 'bombTaken',      type: 'circle', size: 30, sensor: true },
 
   { id: 6,    name: 'PupEmpty',          category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
   { id: 6.1,  name: 'PupJJ',             category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
@@ -27,18 +33,17 @@ var physicsData = [
   { id: 6.3,  name: 'PupTP',             category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
   { id: 6.4,  name: 'PupSpeed',          category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
 
-  { id: 10,   name: 'Bomb',              category: 'bomb',        type: 'circle',  size: 30, sensor: true  },
   { id: 7,    name: 'Spike',             category: 'spike',       type: 'circle',  size: 28, sensor: false  },
 
   { id: 8,    name: 'Button',            category: 'button',      type: 'circle',  size: 16, sensor: true  },
-  { id: 9,    name: 'EmptyGate',         category: 'gate',        type: 'circle',  size: 40, sensor: true  },
-  { id: 9.1,  name: 'GreenGate',         category: 'gate',        type: 'circle',  size: 40, sensor: true  },
-  { id: 9.2,  name: 'RedGate',           category: 'gate',        type: 'circle',  size: 40, sensor: true  },
-  { id: 9.3,  name: 'BlueGate',          category: 'gate',        type: 'circle',  size: 40, sensor: true  },
+  { id: 9,    name: 'EmptyGate',         category: 'emptyGate',  type: 'square', size: 40, sensor: true },
+  { id: 9.1,  name: 'GreenGate',         category: 'greenGate',  type: 'square', size: 40, sensor: true },
+  { id: 9.2,  name: 'RedGate',           category: 'redGate',    type: 'square', size: 40, sensor: true },
+  { id: 9.3,  name: 'BlueGate',          category: 'blueGate',   type: 'square', size: 40, sensor: true },
 
   { id: 13,   name: 'Portal',            category: 'portal',      type: 'circle',  size: 30, sensor: true  },
-  { id: 24,   name: 'RedPortal',         category: 'portal',      type: 'circle',  size: 30, sensor: true  },
-  { id: 25,   name: 'BluePortal',        category: 'portal',      type: 'circle',  size: 30, sensor: true  },
+  { id: 24,   name: 'RedPortal',         category: 'redPortal',   type: 'circle',  size: 30, sensor: true  },
+  { id: 25,   name: 'BluePortal',        category: 'bluePortal',  type: 'circle',  size: 30, sensor: true  },
 
   { id: 22,   name: 'GravityWell',       category: 'gravityWell', type: 'circle',  size: 28, sensor: true  },
 
@@ -48,10 +53,9 @@ var physicsData = [
   { id: 19.1, name: 'RedPotatoTaken',    category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
   { id: 20,   name: 'BluePotato',        category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
   { id: 20.1, name: 'BluePotatoTaken',   category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
-
-  { id: 11,   name: 'RedTeamTile',       category: 'teamTile',    type: 'square',  size: 40, sensor: true  },
-  { id: 12,   name: 'BlueTeamTile',      category: 'teamTile',    type: 'square',  size: 40, sensor: true  },
-  { id: 23,   name: 'YellowTeamTile',    category: 'teamTile',    type: 'square',  size: 40, sensor: true  },
+{ id: 11, name: 'RedTeamTile',    category: 'redTeamTile',    type: 'square', size: 40, sensor: true },
+{ id: 12, name: 'BlueTeamTile',   category: 'blueTeamTile',   type: 'square', size: 40, sensor: true },
+{ id: 23, name: 'YellowTeamTile', category: 'yellowTeamTile', type: 'square', size: 40, sensor: true },
 
   { id: 'marsball', name: 'Marsball',    category: 'marsball',    type: 'circle',  size: 78, sensor: false },
 ];

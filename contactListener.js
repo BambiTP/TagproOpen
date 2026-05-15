@@ -24,7 +24,7 @@ function schedulePlayerTeleport(player, x, y) {
 function applyExplosion(cx, cy, radius, strength) {
   const b2Vec2 = Box2D.Common.Math.b2Vec2;
 
-  for (const player of Object.values(game.players)) {
+for (const player of game.players) {
     const pos  = player.body.GetPosition();
     const dx   = pos.x - cx;
     const dy   = pos.y - cy;
@@ -87,23 +87,29 @@ function applyBoost(player) {
     new Box2D.Common.Math.b2Vec2(vel.x * multiplier, vel.y * multiplier)
   );
 }
+function scheduleChangeState(x, y, state, id) {
+  Promise.resolve().then(() => {
+    if (!game) return;
+    const tileData = game.dataMap[x][y]
+    if (tileData) tileData.state = state;
+    if (renderer) renderer.changeTile(x, y, id);
+  });
+}
 
-/**
- * Defer a tile change until after the current physics step,
- * so we never destroy a Box2D body inside a contact callback.
- */
+
 function scheduleTileChange(x, y, newId = 0) {
   Promise.resolve().then(() => {
-    if (!window.game) return;
+    if (!game) return;
     game.setTile(x, y, newId);
-
-    if (window.renderer) {
-      const entry = game.dataMap[y]?.[x];
-      if (entry?.sprite)           { entry.sprite.destroy();           entry.sprite           = null; }
-      if (entry?.backgroundSprite) { entry.backgroundSprite.destroy(); entry.backgroundSprite = null; }
-      if (newId) renderer.drawTile(x, y, newId);
-    }
+    if (renderer) renderer.changeTile(x, y, newId);
   });
+}
+
+function triggerBomb(x, y) {
+  if (game.map[y][x] !== 10) return;
+  applyExplosion(x + 0.5, y + 0.5, game.config.bombRadius, game.config.bombStrength);
+  scheduleTileChange(x, y, 10.1);
+  setTimeout(() => scheduleTileChange(x, y, 10), game.config.bombCooldown);
 }
 
 // ------------------------------------------------------------
@@ -118,57 +124,109 @@ case 'spike':
   popPlayer(player);
   break;
 
-case 'boost': {
-  const ud = game.dataMap[other.y]?.[other.x]?.body?.GetUserData();
-  if (!ud || ud.taken) break;
-  ud.taken = true;
-  applyBoost(player);
-  renderer.changeTileTexture(other.x, other.y, 5.1);
-  setTimeout(() => {
-    ud.taken = false;
-    renderer.changeTileTexture(other.x, other.y, 5);
-  }, 10000);
-  break;
-}
 
 case 'redBoost': {
-  if (player.team !== 'red') break;
-  const ud = game.dataMap[other.y]?.[other.x]?.body?.GetUserData();
-  if (!ud || ud.taken) break;
-  ud.taken = true;
+  // 1. Initialize state if missing
+  if (!other.state) other.state = 'active';
+  console.log(other.state)
+
+  // 2. Standard check
+  if (player.team !== 'red' || other.state === 'cooldown') break;
+
   applyBoost(player);
-  renderer.changeTileTexture(other.x, other.y, 14.1);
+  scheduleChangeState(other.x, other.y, 'cooldown', 14.1);
+  other.state = 'cooldown';
+  
   setTimeout(() => {
-    ud.taken = false;
-    renderer.changeTileTexture(other.x, other.y, 14);
-  }, 10000);
+    scheduleChangeState(other.x, other.y, 'active', 14);
+    other.state = 'active';
+  }, game.config.blueBoostCooldown);
   break;
 }
 
 case 'blueBoost': {
-  if (player.team !== 'blue') break;
-  const ud = game.dataMap[other.y]?.[other.x]?.body?.GetUserData();
-  if (!ud || ud.taken) break;
-  ud.taken = true;
+  if (!other.state) other.state = 'active';
+  if (player.team !== 'blue' || other.state === 'cooldown') break;
+
   applyBoost(player);
-  renderer.changeTileTexture(other.x, other.y, 15.1);
+  other.state = 'cooldown';
+  scheduleChangeState(other.x, other.y, 'cooldown', 15.1);
+
   setTimeout(() => {
-    ud.taken = false;
-    renderer.changeTileTexture(other.x, other.y, 15);
-  }, 10000);
+    other.state = 'active';
+    scheduleChangeState(other.x, other.y, 'active', 15);
+  }, game.config.blueBoostCooldown);
+  break;
+}
+
+case 'boost': { 
+  if (!other.state) other.state = 'active';
+  if (other.state === 'cooldown') break;
+
+  applyBoost(player);
+  other.state = 'cooldown';
+  scheduleChangeState(other.x, other.y, 'cooldown', 5.1);
+
+  setTimeout(() => {
+    other.state = 'active';
+    scheduleChangeState(other.x, other.y, 'active', 5);
+  }, game.config.boostCooldown);
   break;
 }
 case 'bomb': {
-  const bx = other.x + 0.5;
-  const by = other.y + 0.5;
-  applyExplosion(bx, by, cfg.bombRadius, cfg.bombStrength);
-  renderer.changeTileTexture(other.x, other.y, 10.1);
+  // 1. Initialize state and check for cooldown
+  if (!other.state) other.state = 'active';
+  if (other.state === 'cooldown' || game.map[other.y][other.x] !== 10) break;
+
+  // 2. Execute Explosion Logic
+  applyExplosion(
+    other.x + 0.5, 
+    other.y + 0.5, 
+    game.config.bombRadius, 
+    game.config.bombStrength
+  );
+
+  // 3. Set Cooldown State and Visuals
+  other.state = 'cooldown';
+  scheduleTileChange(other.x, other.y, 10.1);
+
+  // 4. Reset after cooldown
   setTimeout(() => {
-    renderer.changeTileTexture(other.x, other.y, 10);
-  }, 30000);
-  console.log('bomb', player.id);
+    other.state = 'active';
+    scheduleTileChange(other.x, other.y, 10);
+  }, game.config.bombCooldown);
   break;
 }
+
+// begin
+case 'button': {
+  if (!other.switchGates) break;
+
+  clearTimeout(other.switchTimerHandle);
+  other.switchTimerHandle = null;
+
+  const gateId = player.team === 'red'  ? 9.2
+               : player.team === 'blue' ? 9.3
+               : 9.1;
+
+  for (const gate of other.switchGates) {
+    scheduleTileChange(gate.x, gate.y, gateId);
+  }
+
+  break;
+}
+
+    case 'redGate':
+      if (player.team !== 'red') popPlayer(player);
+      break;
+
+    case 'blueGate':
+      if (player.team !== 'blue') popPlayer(player);
+      break;
+
+    case 'greenGate':
+      popPlayer(player);
+      break;
 
     case 'redFlag':
       if (player.team === 'blue') console.log('pickupRedFlag',    player.id);
@@ -199,9 +257,43 @@ case 'portal': {
   break;
 }
 
-    case 'button':
-      console.log('button', player.id);
-      break;
+case 'redPortal': {
+  if (player.team !== 'red') break;
+  if (!other.portalDest || other.portalOnCooldown || player.portalCooldown) break;
+
+  other.portalOnCooldown = true;
+  setTimeout(() => { other.portalOnCooldown = false; }, other.portalCooldown);
+
+  player.portalCooldown = true;
+
+  const redDest = other.portalDest;
+  schedulePlayerTeleport(player, redDest.x + 0.5, redDest.y + 0.5);
+  break;
+}
+
+case 'bluePortal': {
+  if (player.team !== 'blue') break;
+  if (!other.portalDest || other.portalOnCooldown || player.portalCooldown) break;
+
+  other.portalOnCooldown = true;
+  setTimeout(() => { other.portalOnCooldown = false; }, other.portalCooldown);
+
+  player.portalCooldown = true;
+
+  const blueDest = other.portalDest;
+  schedulePlayerTeleport(player, blueDest.x + 0.5, blueDest.y + 0.5);
+  break;
+}
+case 'yellowTeamTile':
+case 'redTeamTile':
+case 'blueTeamTile': {
+  if (other.category === 'redTeamTile'  && player.team !== 'red')  break;
+  if (other.category === 'blueTeamTile' && player.team !== 'blue') break;
+
+player.maxSpeed = game.config.teamTileMaxSpeed;
+player.accel    = game.config.teamTileAccel;
+  break;
+}
 
     case 'redGoal':
       if (player.team === 'red'  && player.hasFlag) console.log('score red',  player.id);
@@ -227,11 +319,36 @@ function handlePlayerEnd(player, other) {
       console.log('gravityExit', player.id);
       break;
     case 'portal':
+    case 'redPortal':
+    case 'bluePortal':
       player.portalCooldown = false;
       break;
-  }
+case 'button': {
+  if (!other.switchGates) break;
+
+  other.switchTimerHandle = setTimeout(() => {
+    other.switchTimerHandle = null;
+    for (const gate of other.switchGates) {
+      scheduleTileChange(gate.x, gate.y, gate.defaultId);
+    }
+  }, other.switchTimer * 1000);
+
+  break;
+}
+case 'yellowTeamTile':
+case 'redTeamTile':
+case 'blueTeamTile': {
+  if (other.category === 'redTeamTile'  && player.team !== 'red')  break;
+  if (other.category === 'blueTeamTile' && player.team !== 'blue') break;
+
+  player.maxSpeed = game.config.maxSpeed;
+  player.accel    = game.config.accel;
+  break;
 }
 
+
+  }
+}
 function handleObjectBegin(object, other) {
   // add object-specific begin behaviors here
 }
@@ -242,38 +359,16 @@ function handleObjectEnd(object, other) {
 
 // ------------------------------------------------------------
 // Fires every tick while two bodies are touching
-// Used for: canceling collisions (ghost, gates, teammates)
+// Used for: canceling collisions (gates, teammates)
 // ------------------------------------------------------------
 
 function handlePlayerCollision(player, other, contact) {
-  switch (other.category) {
-    case 'wall':
-      if (player.ghost) contact.SetEnabled(false);
-      break;
-    case 'redGate':
-      if (player.team === 'red'  || player.ghost) contact.SetEnabled(false);
-      break;
-    case 'blueGate':
-      if (player.team === 'blue' || player.ghost) contact.SetEnabled(false);
-      break;
-    case 'greenGate':
-      if (player.ghost) contact.SetEnabled(false);
-      break;
-    case 'emptyGate':
-      contact.SetEnabled(false);
-      break;
-    case 'player':
-      if (player.team === other.team) contact.SetEnabled(false);
-      break;
-  }
+  // example: cancel collision with a specific tile type
+  // if (other.category === 'wall') contact.SetEnabled(false);
 }
 
 function handleObjectCollision(object, other, contact) {
-  switch (other.category) {
-    case 'wall':
-      if (object.ghost) contact.SetEnabled(false);
-      break;
-  }
+  // add object-specific collision behaviors here
 }
 
 // ------------------------------------------------------------

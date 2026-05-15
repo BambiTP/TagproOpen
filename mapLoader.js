@@ -50,8 +50,10 @@ async function loadMap(mapId) {
     json = await res.json();
   } catch {}
 
-const fields  = json.fields  ?? {};
-const portals = json.portals ?? {};
+  const fields   = json.fields   ?? {};
+  const portals  = json.portals  ?? {};
+  const switches = json.switches ?? {};
+
   const w = cvs.width, h = cvs.height;
   const map     = [];
   const wallMap = [];
@@ -76,13 +78,18 @@ const portals = json.portals ?? {};
 
       const id = COLOR_TO_ID[hex];
       wallMap[y][x] = (id === 1 || id === 1.1 || id === 1.2 || id === 1.3 || id === 1.4) ? id : 0;
+const key = `${x},${y}`;
 
       if (hex === '007500') {
-        const state = fields[`${x},${y}`]?.defaultState?.toLowerCase();
-        map[y][x] = state === 'green' ? 9.1
+        const state = fields[key]?.defaultState?.toLowerCase();
+        map[y][x] = state === 'on' ? 9.1
                   : state === 'red'   ? 9.2
                   : state === 'blue'  ? 9.3
                   : 9;
+      } else if (hex === 'cac000' || hex === 'cc3300' || hex === '0066cc') {
+        const baseId = COLOR_TO_ID[hex];
+        const hasDestination = portals[key]?.destination != null;
+        map[y][x] = hasDestination ? baseId : baseId + 0.1;
       } else {
         map[y][x] = COLOR_TO_ID[hex] ?? 0;
       }
@@ -95,7 +102,8 @@ const portals = json.portals ?? {};
 
   const spawnPool = buildSpawnPool(json.spawnPoints ?? {}, map);
 
-return { map, wallMap, dataMap, spawnPool, portals };}
+  return { map, wallMap, dataMap, spawnPool, portals, switches };
+}
 
 function buildSpawnPool(spawnPoints, map) {
   const pool = {};

@@ -20,18 +20,19 @@ const {
 
 class Game {
   constructor(config) {
-    this.config = config;
-    this.players = {};
+    this.config  = config;
+    this.players = [];
 
-    this.map     = [];  // 2D array of tile IDs (numbers). map[y][x] = id
-    this.dataMap = [];  // 2D array of tile data.     dataMap[y][x] = { id, body, sprite }
-    this.wallMap = [];  // 2D array of wall solids bitmasks. wallMap[y][x] = bitmask
+    this.map      = [];
+    this.dataMap  = [];
+    this.wallMap  = [];
     this.spawnPool = [];
 
     this.physicsLookup = {};
     for (const t of physicsData) {
       this.physicsLookup[t.id] = t;
     }
+
     this.world = new b2World(
       new b2Vec2(config.gravityX, config.gravityY),
       true
@@ -40,16 +41,19 @@ class Game {
     this.world.SetContactListener(buildContactListener());
 
     this.timeStep = 1 / 60;
-    this.velIter = 8;
-    this.posIter = 3;
+    this.velIter  = 8;
+    this.posIter  = 3;
+    this.running  = false;
+  }
 
-    this.running = false;
+  getPlayer(id) {
+    return this.players.find(p => p.id === id) ?? null;
   }
 
   moveBalls() {
-    for (const p of Object.values(this.players)) {
-      const body = p.body;
-      const max = p.maxSpeed;
+    for (const p of this.players) {
+      const body  = p.body;
+      const max   = p.maxSpeed;
       const accel = p.accel;
       let { x: vx, y: vy } = body.GetLinearVelocity();
 
@@ -62,70 +66,68 @@ class Game {
     }
   }
 
-spawnPlayer(id, team) {
-  const config  = this.config;
-  const teamStr = (team === 2 || team === 'blue') ? 'blue' : 'red';
+  spawnPlayer(id, team) {
+    const config  = this.config;
+    const teamStr = (team === 2 || team === 'blue') ? 'blue' : 'red';
 
-  const sp    = this.spawnPool?.[teamStr];
-  if (!sp?.length) { console.error(`spawnPool not ready for "${teamStr}"`); return null; }
+    const sp = this.spawnPool?.[teamStr];
+    if (!sp?.length) { console.error(`spawnPool not ready for "${teamStr}"`); return null; }
 
-  const point = sp[Math.floor(Math.random() * sp.length)];
-  const x     = point.x;
-  const y     = point.y;
+    const point = sp[Math.floor(Math.random() * sp.length)];
 
-  const bodyDef = new b2BodyDef();
-  bodyDef.type = b2Body.b2_dynamicBody;
-  bodyDef.position.Set(x, y);
-  bodyDef.linearDamping  = config.linearDamping;
-  bodyDef.angularDamping = config.angularDamping;
-  bodyDef.allowSleep = false;
-  const body = this.world.CreateBody(bodyDef);
+    const bodyDef = new b2BodyDef();
+    bodyDef.type           = b2Body.b2_dynamicBody;
+    bodyDef.position.Set(point.x, point.y);
+    bodyDef.linearDamping  = config.linearDamping;
+    bodyDef.angularDamping = config.angularDamping;
+    bodyDef.allowSleep     = false;
+    const body = this.world.CreateBody(bodyDef);
 
-  const fixtureDef = new b2FixtureDef();
-  fixtureDef.shape       = new b2CircleShape(config.radius);
-  fixtureDef.density     = config.density;
-  fixtureDef.friction    = config.friction;
-  fixtureDef.restitution = config.restitution;
-  body.CreateFixture(fixtureDef);
+    const fixtureDef       = new b2FixtureDef();
+    fixtureDef.shape       = new b2CircleShape(config.radius);
+    fixtureDef.density     = config.density;
+    fixtureDef.friction    = config.friction;
+    fixtureDef.restitution = config.restitution;
+    body.CreateFixture(fixtureDef);
 
-  const player = {
-    id,
-    team: teamStr,
-    body,
-    socket: null,
-    isPlayer: true,
+    const player = {
+      id,
+      team: teamStr,
+      body,
+      socket: null,
+      isPlayer: true,
 
-    x: 0, y: 0,
-    lx: 0, ly: 0,
-    a: 0, ra: 0,
+      x: point.x, y: point.y,
+      lx: 0, ly: 0,
+      a: 0, ra: 0,
 
-    left: false, right: false, up: false, down: false,
+      left: false, right: false, up: false, down: false,
 
-    maxSpeed: config.maxSpeed,
-    accel:    config.accel,
+      maxSpeed: config.maxSpeed,
+      accel:    config.accel,
 
-    ghost: false, hasFlag: false,
-    tagpro: false, bomb: false, speed: false, grip: false,
-    dead: false,
-  };
+      ghost: false, hasFlag: false,
+      tagpro: false, bomb: false, speed: false, grip: false,
+      dead: false,
+    };
 
-  body.SetUserData(player);
-  this.players[id] = player;
-  return player;
-}
+    body.SetUserData(player);
+    this.players.push(player);
+    return player;
+  }
 
   removePlayer(id) {
-    const player = this.players[id];
-    if (!player) return;
-    this.world.DestroyBody(player.body);
-    delete this.players[id];
+    const index = this.players.findIndex(p => p.id === id);
+    if (index === -1) return;
+    this.world.DestroyBody(this.players[index].body);
+    this.players.splice(index, 1);
   }
 
   start() {
     if (this.running) return;
     this.running = true;
 
-    this.lastTime = Date.now();
+    this.lastTime    = Date.now();
     this.accumulator = 0;
 
     const STEP = 1000 / 60;
@@ -133,9 +135,9 @@ spawnPlayer(id, team) {
     const loop = () => {
       if (!this.running) return;
 
-      const now = Date.now();
+      const now       = Date.now();
       const frameTime = now - this.lastTime;
-      this.lastTime = now;
+      this.lastTime   = now;
 
       this.accumulator += Math.min(frameTime, 250);
 
@@ -161,9 +163,9 @@ spawnPlayer(id, team) {
   }
 
   syncPlayers() {
-    for (const player of Object.values(this.players)) {
-      const pos = player.body.GetPosition();
-      const vel = player.body.GetLinearVelocity();
+    for (const player of this.players) {
+      const pos  = player.body.GetPosition();
+      const vel  = player.body.GetLinearVelocity();
       player.x  = pos.x;
       player.y  = pos.y;
       player.lx = vel.x;
@@ -171,7 +173,6 @@ spawnPlayer(id, team) {
     }
   }
 
-  // Build Box2D bodies from game.map and populate game.dataMap.
   createMap() {
     this.clearTiles();
     this.dataMap = this.map.map(row => row.map(() => null));
@@ -185,24 +186,19 @@ spawnPlayer(id, team) {
     }
   }
 
-
   clearTiles() {
     for (let y = 0; y < this.dataMap.length; y++) {
       for (let x = 0; x < this.dataMap[y].length; x++) {
         const data = this.dataMap[y]?.[x];
-        if (data?.body) {
-          this.world.DestroyBody(data.body);
-        }
+        if (data?.body) this.world.DestroyBody(data.body);
       }
     }
     this.dataMap = [];
   }
 
   setTile(x, y, id) {
-    // Update map
     this.map[y][x] = id || 0;
 
-    // Destroy old body
     const old = this.dataMap[y]?.[x];
     if (old?.body) this.world.DestroyBody(old.body);
 
@@ -215,29 +211,47 @@ spawnPlayer(id, team) {
     this.dataMap[y][x] = entry;
     return entry;
   }
-applyPortalData(portals) {
-  for (const [key, pd] of Object.entries(portals)) {
-    const [x, y] = key.split(',').map(Number);
-    const entry = this.dataMap[y]?.[x];
-    if (!entry?.body) continue;
 
-    const ud = entry.body.GetUserData();
-    ud.portalDest       = pd.destination ?? null;
-    ud.portalCooldown   = pd.cooldown    ?? 0;
-    ud.portalOnCooldown = false;
+  applyPortalData(portals) {
+    for (const [key, pd] of Object.entries(portals)) {
+      const [x, y] = key.split(',').map(Number);
+      const entry  = this.dataMap[y]?.[x];
+      if (!entry?.body) continue;
+
+      const ud            = entry.body.GetUserData();
+      ud.portalDest       = pd.destination ?? null;
+      ud.portalCooldown   = pd.cooldown    ?? 0;
+      ud.portalOnCooldown = false;
+    }
   }
-}
-  // Internal: create and return a Box2D body for tile id at grid (x, y).
+
+  applySwitchData(switches) {
+    for (const [key, switchData] of Object.entries(switches)) {
+      const [buttonX, buttonY] = key.split(',').map(Number);
+      const userData = this.dataMap[buttonY]?.[buttonX]?.body?.GetUserData();
+      if (!userData) continue;
+
+      userData.switchTimer       = switchData.timer ?? 0;
+      userData.switchActive      = false;
+      userData.switchTimerHandle = null;
+      userData.switchGates       = switchData.toggle.map(({ pos: { x: gateX, y: gateY } }) => ({
+        x: gateX,
+        y: gateY,
+        defaultId: this.dataMap[gateY]?.[gateX]?.id ?? 9,
+      }));
+    }
+  }
+
   makeBody(id, x, y) {
     const tileData = this.physicsLookup[id];
     if (!tileData) return null;
 
     const bodyDef = new b2BodyDef();
-    bodyDef.type = b2Body.b2_staticBody;
+    bodyDef.type  = b2Body.b2_staticBody;
     bodyDef.position.Set(x + 0.5, y + 0.5);
     const body = this.world.CreateBody(bodyDef);
 
-    const fixDef = new b2FixtureDef();
+    const fixDef    = new b2FixtureDef();
     fixDef.isSensor = tileData.sensor ?? false;
 
     if (tileData.type === 'vector') {
@@ -254,9 +268,9 @@ applyPortalData(portals) {
 
     body.CreateFixture(fixDef);
     body.SetUserData({
-      isTile: true,
+      isTile:   true,
       category: tileData.category ?? 'unknown',
-      tileId: id,
+      tileId:   id,
       x,
       y,
     });

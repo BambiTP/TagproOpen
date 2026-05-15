@@ -41,7 +41,7 @@ class Renderer {
       img.crossOrigin = 'anonymous';
       img.src = url;
       await new Promise(r => img.onload = r);
-      this.spriteSheets[key] = new PIXI.ImageSource({ resource: img });
+      this.spriteSheets[key] = new PIXI.ImageSource({ resource: img,  });
     }
     this.cacheAllFrames();
   }
@@ -77,6 +77,7 @@ class Renderer {
     if (!tex) return;
 
     const entry = game.dataMap[y][x];
+    game.dataMap[y][x].id = id;
 
     if (sd.hasBackground) {
       const floor = new PIXI.Sprite(this.sprites[2]);
@@ -161,7 +162,7 @@ class Renderer {
     this.createMap();
 
     this.app.ticker.add(() => {
-      for (const player of Object.values(game.players)) {
+      for (const player of game.players) { 
         if (!player.container) continue;
         player.container.x = player.x * GRID_SIZE;
         player.container.y = player.y * GRID_SIZE;
@@ -170,41 +171,41 @@ class Renderer {
   }
 
 setCamera(x, y, zoom = 1) {
-  // 1. Keep the high-precision floats in your camera state
   this.camera.x = x;
   this.camera.y = y;
   this.camera.zoom = zoom;
 
-  // 2. Set the scale (Zoom)
   this.world.scale.set(zoom);
-
-  // 3. The "Wiggle Fix": Round the final screen position of the world container.
-  // We calculate where the world SHOULD be, then use Math.round on the result.
-  this.world.x = Math.round((this.app.renderer.width / 2) - (x * GRID_SIZE * zoom));
-  this.world.y = Math.round((this.app.renderer.height / 2) - (y * GRID_SIZE * zoom));
+  this.world.x = (this.app.renderer.width  / 2) - (x * GRID_SIZE * zoom);
+  this.world.y = (this.app.renderer.height / 2) - (y * GRID_SIZE * zoom);
 }
-
-  stop() {
-    this.app.ticker.stop();
-  }
 
   destroy() {
     this.stop();
     this.app.destroy(true, { children: true, texture: false, baseTexture: false });
     this.canvas.removeChild(this.app.canvas);
   }
-changeTileTexture(x, y, newId) {
-  const entry = game.dataMap[y][x];
-  if (!entry) return;
+changeTile(x, y, newId) {
+  const entry = game.dataMap[y]?.[x];
+  if (!entry) {
+    return; 
+  }
 
   if (entry.sprite) {
     entry.sprite.destroy();
-    entry.sprite = null;
+     entry.sprite = null;
+      }
+  if (entry.backgroundSprite) {
+    entry.backgroundSprite.destroy();
+    entry.backgroundSprite = null; 
   }
 
-  game.map[y][x] = newId;
-  this.drawTile(x, y, newId);
+  if (newId) {
+    this.drawTile(x, y, newId);
+  }
 }
+
+
   bakeBackground() {
     const bgLayer = this.layers['background'];
     if (!bgLayer || bgLayer.children.length === 0) return;

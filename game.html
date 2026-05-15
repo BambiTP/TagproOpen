@@ -9,17 +9,13 @@
     #canvas { width: 100vw; height: 100vh; }
   </style>
 
-  <!-- Physics -->
   <script src="https://cdn.jsdelivr.net/gh/BambiTP/box2dcdn@main/Box2dWeb-2.1.a.3.js"></script>
-  <!-- Renderer -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.6.6/pixi.min.js"></script>
 
-  <!-- Data -->
   <script src="physicsData.js"></script>
   <script src="renderData.js"></script>
   <script src="quadrantCoords.js"></script>
 
-  <!-- Systems -->
   <script src="contactListener.js"></script>
   <script src="game.js"></script>
   <script src="mapLoader.js"></script>
@@ -29,77 +25,84 @@
   <div id="canvas"></div>
   <script>
 
-  const MAP_ID = 12345;
+  const MAP_ID = 97654;
 
-    const IMAGE_MAP = {
-      tiles:        'https://static.koalabeast.com/textures/musclescupgradients/tiles.png',
-      speedpad:     'https://static.koalabeast.com/textures/musclescupgradients/speedpad.png',
-      speedpadRed:  'https://static.koalabeast.com/textures/musclescupgradients/speedpadred.png',
-      speedpadBlue: 'https://static.koalabeast.com/textures/musclescupgradients/speedpadblue.png',
-      portal:       'https://static.koalabeast.com/textures/musclescupgradients/portal.png',
-      portalRed:    'https://static.koalabeast.com/textures/musclescupgradients/portalred.png',
-      portalBlue:   'https://static.koalabeast.com/textures/musclescupgradients/portalblue.png',
-      //gravityWell:  'https://static.koalabeast.com/textures/musclescupgradients/gravitywell.png',
-    };
+  const IMAGE_MAP = {
+    tiles:        'https://static.koalabeast.com/textures/musclescupgradients/tiles.png',
+    speedpad:     'https://static.koalabeast.com/textures/musclescupgradients/speedpad.png',
+    speedpadRed:  'https://static.koalabeast.com/textures/musclescupgradients/speedpadred.png',
+    speedpadBlue: 'https://static.koalabeast.com/textures/musclescupgradients/speedpadblue.png',
+    portal:       'https://static.koalabeast.com/textures/musclescupgradients/portal.png',
+    portalRed:    'https://static.koalabeast.com/textures/musclescupgradients/portalred.png',
+    portalBlue:   'https://static.koalabeast.com/textures/musclescupgradients/portalblue.png',
+  };
 
-const TPU = 2.5;
+  const TPU = 2.5;
 
-const GAME_CONFIG = {
-  gravityX: 0,
-  gravityY: 0,
-  radius:         0.19  * TPU,
-  density:        0.475,
-  friction:       0.5,
-  restitution:    0.2,
-  linearDamping:  0.5,
-  angularDamping: 0.5,
-  accel:          0.025 * TPU,
-  maxSpeed:       2.5   * TPU,
+  const GAME_CONFIG = {
+    gravityX: 0,
+    gravityY: 0,
+    radius:         0.19  * TPU,
+    density:        0.475,
+    friction:       0.5,
+    restitution:    0.2,
+    linearDamping:  0.5,
+    angularDamping: 0.5,
+    accel:          0.025 * TPU,
+    maxSpeed:       2.5   * TPU,
 
-  boostMultiplier:     2.9,
+    boostMultiplier:     2.9,
 
-  bombRadius:          0.4 * 7   * TPU,
-  bombStrength:        1.25      * TPU,
+    bombRadius:          0.4 * 7   * TPU,
+    bombStrength:        1.25      * TPU,
 
-  rollingBombRadius:   0.4 * 5   * TPU,
-  rollingBombStrength: 0.75      * TPU,
+    rollingBombRadius:   0.4 * 5   * TPU,
+    rollingBombStrength: 0.75      * TPU,
 
-  portalExploRadius:   0.4 * 4   * TPU,
-  portalExploStrength: 0.25      * TPU,
+    portalExploRadius:   0.4 * 4   * TPU,
+    portalExploStrength: 0.25      * TPU,
 
-  deathExploRadius:    0.4 * 3.5 * TPU,
-  deathExploStrength:  0.25      * TPU,
-};
+    deathExploRadius:    0.4 * 3.5 * TPU,
+    deathExploStrength:  0.25      * TPU,
+
+    boostCooldown:     10000,
+    redBoostCooldown:  10000,
+    blueBoostCooldown: 10000,
+    bombCooldown:      30000,
+
+    teamTileAccel:    0.037 * TPU,
+    teamTileMaxSpeed: 5     * TPU,
+  };
 
   let game, renderer;
 
   // ─── Input ────────────────────────────────────────────────────────────────
-  window.addEventListener('keydown', e => {
-    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-    handleKey(e.key, true);
-  }, { passive: false });
-  window.addEventListener('keyup', e => handleKey(e.key, false));
+  window.addEventListener('keydown', e => handleKey(e.key, true));
+  window.addEventListener('keyup',   e => handleKey(e.key, false));
 
-  function handleKey(key, down) {
-    const p = game?.players[0];
-    if (!p) return;
-    if (key === 'ArrowLeft')  p.left  = down;
-    if (key === 'ArrowRight') p.right = down;
-    if (key === 'ArrowUp')    p.up    = down;
-    if (key === 'ArrowDown')  p.down  = down;
+function handleKey(key, down) {
+  const p = game?.players.find(p => p.id === 0);
+  if (!p) return;
+
+  switch (key) {
+    case 'a': case 'A': case 'j': case 'J': case 'ArrowLeft':  p.left  = down; break;
+    case 'd': case 'D': case 'l': case 'L': case 'ArrowRight': p.right = down; break;
+    case 'w': case 'W': case 'i': case 'I': case 'ArrowUp':    p.up    = down; break;
+    case 's': case 'S': case 'k': case 'K': case 'ArrowDown':  p.down  = down; break;
   }
-
+}
   // ─── Start ────────────────────────────────────────────────────────────────
-async function start() {
+  async function start() {
     game = new Game(GAME_CONFIG);
 
-const { map: tileMap, wallMap, dataMap, spawnPool, portals } = await loadMap(MAP_ID);
-game.map       = tileMap;  // ← this line is missing
-game.wallMap   = wallMap;
-game.dataMap   = dataMap;
-game.spawnPool = spawnPool;
-game.createMap();
-game.applyPortalData(portals);
+    const { map: tileMap, wallMap, dataMap, spawnPool, portals, switches } = await loadMap(MAP_ID);
+    game.map       = tileMap;
+    game.wallMap   = wallMap;
+    game.dataMap   = dataMap;
+    game.spawnPool = spawnPool;
+    game.createMap();
+    game.applyPortalData(portals);
+    game.applySwitchData(switches);
     game.spawnPlayer(0, 'red');
 
     renderer = new Renderer(document.getElementById('canvas'));
@@ -109,7 +112,7 @@ game.applyPortalData(portals);
     renderer.drawPlayer(0);
 
     renderer.app.ticker.add(() => {
-      const local = game.players[0];
+      const local = game.players.find(p => p.id === 0);
       if (local) renderer.setCamera(local.x, local.y);
     });
 
