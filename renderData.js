@@ -58,7 +58,7 @@ const renderData = [
 { id: 20,   name: 'bluePotato',       image: 'tiles',       x: 14,   y: 8,    size: 40, layer: 'dynamic',    hasBackground: true  },
 { id: 20.1, name: 'bluePotatoTaken',  image: 'tiles',       x: 15,   y: 8,    size: 40, layer: 'dynamic',    hasBackground: true  },
 
-{ id: 22,   name: 'gravityWell',      image: 'gravityWell', x: 0,    y: 0,    size: 40, layer: 'dynamic',    hasBackground: true  },
+{ id: 22,   name: 'gravityWell',      image: 'gravitywell', x: 0,    y: 0,    size: 40, layer: 'static',    hasBackground: true  },
 
 { id: 'redball',  name: 'redBall',    image: 'tiles',       x: 14,   y: 0,    size: 40, layer: 'dynamic',    hasBackground: false },
 { id: 'blueball', name: 'blueBall',   image: 'tiles',       x: 15,   y: 0,    size: 40, layer: 'dynamic',    hasBackground: false },

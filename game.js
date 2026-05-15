@@ -156,11 +156,44 @@ class Game {
     this.running = false;
   }
 
-  step() {
-    this.moveBalls();
-    this.world.Step(this.timeStep, this.velIter, this.posIter);
-    this.syncPlayers();
+step() {
+  this.moveBalls();
+  this.applyGravityWells();
+  this.world.Step(this.timeStep, this.velIter, this.posIter);
+  this.syncPlayers();
+}
+
+
+applyGravityWells() {
+  const strength = this.config.gravityWellStrength;
+
+  for (let y = 0; y < this.dataMap.length; y++) {
+    for (let x = 0; x < this.dataMap[y]?.length; x++) {
+      const entry = this.dataMap[y][x];
+      if (!entry || entry.id !== 22 || !entry.fieldBody) continue;
+
+      const pulled = entry.fieldBody.GetUserData()?.pulledPlayers;
+      if (!pulled?.size) continue;
+
+      const cx = x + 0.5;
+      const cy = y + 0.5;
+
+      for (const player of pulled) {
+        const pos  = player.body.GetPosition();
+        const dx   = cx - pos.x;
+        const dy   = cy - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 1e-6) continue;
+
+        const vel = player.body.GetLinearVelocity();
+        player.body.SetLinearVelocity(new b2Vec2(
+          vel.x + (dx / dist) * strength,
+          vel.y + (dy / dist) * strength,
+        ));
+      }
+    }
   }
+}
 
   syncPlayers() {
     for (const player of this.players) {
@@ -181,7 +214,12 @@ class Game {
       for (let x = 0; x < this.map[y].length; x++) {
         const id = this.map[y][x];
         if (!id) continue;
-        this.dataMap[y][x] = { id, body: this.makeBody(id, x, y), sprite: null };
+        this.dataMap[y][x] = {
+          id,
+          body: this.makeBody(id, x, y),
+          fieldBody: id === 22 ? this.makeBody(22.1, x, y) : null,
+          sprite: null,
+        };
       }
     }
   }
@@ -191,6 +229,7 @@ class Game {
       for (let x = 0; x < this.dataMap[y].length; x++) {
         const data = this.dataMap[y]?.[x];
         if (data?.body) this.world.DestroyBody(data.body);
+        if (data?.fieldBody) this.world.DestroyBody(data.fieldBody);
       }
     }
     this.dataMap = [];
@@ -201,13 +240,19 @@ class Game {
 
     const old = this.dataMap[y]?.[x];
     if (old?.body) this.world.DestroyBody(old.body);
+    if (old?.fieldBody) this.world.DestroyBody(old.fieldBody);
 
     if (!id) {
       this.dataMap[y][x] = null;
       return null;
     }
 
-    const entry = { id, body: this.makeBody(id, x, y), sprite: null };
+    const entry = {
+      id,
+      body: this.makeBody(id, x, y),
+      fieldBody: id === 22 ? this.makeBody(22.1, x, y) : null,
+      sprite: null,
+    };
     this.dataMap[y][x] = entry;
     return entry;
   }

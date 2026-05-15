@@ -45,8 +45,8 @@ var physicsData = [
   { id: 24,   name: 'RedPortal',         category: 'redPortal',   type: 'circle',  size: 30, sensor: true  },
   { id: 25,   name: 'BluePortal',        category: 'bluePortal',  type: 'circle',  size: 30, sensor: true  },
 
-  { id: 22,   name: 'GravityWell',       category: 'gravityWell', type: 'circle',  size: 28, sensor: true  },
-
+  { id: 22,   name: 'GravityWell',       category: 'gravityWell', type: 'circle',  size: 28, sensor: false  },
+{ id: 22.1, name: 'gravityWellField', category: 'gravityWellField', type: 'circle', size: gameConfig.gravityWellRadius*80, sensor: true },
   { id: 21,   name: 'YellowPotato',      category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
   { id: 21.1, name: 'YellowPotatoTaken', category: 'powerup',     type: 'circle',  size: 30, sensor: true  },
   { id: 19,   name: 'RedPotato',         category: 'powerup',     type: 'circle',  size: 30, sensor: true  },

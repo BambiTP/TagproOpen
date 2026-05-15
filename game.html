@@ -11,7 +11,7 @@
 
   <script src="https://cdn.jsdelivr.net/gh/BambiTP/box2dcdn@main/Box2dWeb-2.1.a.3.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.6.6/pixi.min.js"></script>
-
+  <script src="gameConfig.js"></script>
   <script src="physicsData.js"></script>
   <script src="renderData.js"></script>
   <script src="quadrantCoords.js"></script>
@@ -24,55 +24,6 @@
 <body>
   <div id="canvas"></div>
   <script>
-
-  const MAP_ID = 97654;
-
-  const IMAGE_MAP = {
-    tiles:        'https://static.koalabeast.com/textures/musclescupgradients/tiles.png',
-    speedpad:     'https://static.koalabeast.com/textures/musclescupgradients/speedpad.png',
-    speedpadRed:  'https://static.koalabeast.com/textures/musclescupgradients/speedpadred.png',
-    speedpadBlue: 'https://static.koalabeast.com/textures/musclescupgradients/speedpadblue.png',
-    portal:       'https://static.koalabeast.com/textures/musclescupgradients/portal.png',
-    portalRed:    'https://static.koalabeast.com/textures/musclescupgradients/portalred.png',
-    portalBlue:   'https://static.koalabeast.com/textures/musclescupgradients/portalblue.png',
-  };
-
-  const TPU = 2.5;
-
-  const GAME_CONFIG = {
-    gravityX: 0,
-    gravityY: 0,
-    radius:         0.19  * TPU,
-    density:        0.475,
-    friction:       0.5,
-    restitution:    0.2,
-    linearDamping:  0.5,
-    angularDamping: 0.5,
-    accel:          0.025 * TPU,
-    maxSpeed:       2.5   * TPU,
-
-    boostMultiplier:     2.9,
-
-    bombRadius:          0.4 * 7   * TPU,
-    bombStrength:        1.25      * TPU,
-
-    rollingBombRadius:   0.4 * 5   * TPU,
-    rollingBombStrength: 0.75      * TPU,
-
-    portalExploRadius:   0.4 * 4   * TPU,
-    portalExploStrength: 0.25      * TPU,
-
-    deathExploRadius:    0.4 * 3.5 * TPU,
-    deathExploStrength:  0.25      * TPU,
-
-    boostCooldown:     10000,
-    redBoostCooldown:  10000,
-    blueBoostCooldown: 10000,
-    bombCooldown:      30000,
-
-    teamTileAccel:    0.037 * TPU,
-    teamTileMaxSpeed: 5     * TPU,
-  };
 
   let game, renderer;
 
@@ -93,7 +44,7 @@ function handleKey(key, down) {
 }
   // ─── Start ────────────────────────────────────────────────────────────────
   async function start() {
-    game = new Game(GAME_CONFIG);
+    game = new Game(gameConfig);
 
     const { map: tileMap, wallMap, dataMap, spawnPool, portals, switches } = await loadMap(MAP_ID);
     game.map       = tileMap;

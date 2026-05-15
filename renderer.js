@@ -69,33 +69,42 @@ class Renderer {
     }
   }
 
-  drawTile(x, y, id) {
-    const sd = this.renderLookup[id];
-    if (!sd) return;
+drawTile(x, y, id) {
+  const sd = this.renderLookup[id];
+  if (!sd) return;
+  const tex = this.sprites[id];
+  if (!tex) return;
+  const entry = game.dataMap[y][x];
+  game.dataMap[y][x].id = id;
 
-    const tex = this.sprites[id];
-    if (!tex) return;
-
-    const entry = game.dataMap[y][x];
-    game.dataMap[y][x].id = id;
-
-    if (sd.hasBackground) {
-      const floor = new PIXI.Sprite(this.sprites[2]);
-      floor.x = x * GRID_SIZE;
-      floor.y = y * GRID_SIZE;
-      this.getLayer('background').addChild(floor);
-      if (entry) entry.backgroundSprite = floor;
-    }
-
-    const sprite = new PIXI.Sprite(tex);
-    sprite.x = x * GRID_SIZE;
-    sprite.y = y * GRID_SIZE;
-    this.getLayer(sd.layer).addChild(sprite);
-    if (entry) entry.sprite = sprite;
-
-    return sprite;
+  if (sd.hasBackground) {
+    const floor = new PIXI.Sprite(this.sprites[2]);
+    floor.x = x * GRID_SIZE;
+    floor.y = y * GRID_SIZE;
+    this.getLayer('background').addChild(floor);
+    if (entry) entry.backgroundSprite = floor;
   }
 
+  const sprite = new PIXI.Sprite(tex);
+  sprite.x = x * GRID_SIZE;
+  sprite.y = y * GRID_SIZE;
+  this.getLayer(sd.layer).addChild(sprite);
+  if (entry) entry.sprite = sprite;
+
+ if (id === 22) {
+    const circle = new PIXI.Graphics();
+    const r = (gameConfig.gravityWellRadius * 40);
+    circle.beginFill(0x000000, 0.3);
+    circle.drawCircle(0, 0, r);
+    circle.endFill();
+    circle.x = x * GRID_SIZE + GRID_SIZE / 2;
+    circle.y = y * GRID_SIZE + GRID_SIZE / 2;
+    this.getLayer(sd.layer).addChild(circle);
+    if (entry) entry.gravityCircle = circle;
+  }
+
+  return sprite;
+}
   createMap() {
     this.world.removeChildren();
     this.layers = {};

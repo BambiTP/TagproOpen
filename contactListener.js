@@ -12,7 +12,14 @@
  * All values in Box2D units (tiles). Config is in TPU; the
  * conversion factor is baked in at GAME_CONFIG time.
  */
+function activateGravityWell(player, wellData) {
+  if (!wellData.pulledPlayers) wellData.pulledPlayers = new Set();
+  wellData.pulledPlayers.add(player);
+}
 
+function gravityWellStop(player, wellData) {
+  wellData.pulledPlayers?.delete(player);
+}
 function schedulePlayerTeleport(player, x, y) {
   Promise.resolve().then(() => {
     player.body.SetPosition(new Box2D.Common.Math.b2Vec2(x, y));
@@ -303,9 +310,13 @@ player.accel    = game.config.teamTileAccel;
       if (player.team === 'blue' && player.hasFlag) console.log('score blue', player.id);
       break;
 
-    case 'gravityWell':
-      console.log('gravityEnter', player.id);
-      break;
+case 'gravityWell':
+  popPlayer(player);
+  break;
+
+case 'gravityWellField':
+  activateGravityWell(player, other);
+  break;
 
     case 'marsball':
       console.log('marsball', player.id);
@@ -335,6 +346,9 @@ case 'button': {
 
   break;
 }
+case 'gravityWellField':
+  gravityWellStop(player, other);
+  break;
 case 'yellowTeamTile':
 case 'redTeamTile':
 case 'blueTeamTile': {
