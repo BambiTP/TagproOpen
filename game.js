@@ -195,16 +195,17 @@ applyGravityWells() {
   }
 }
 
-  syncPlayers() {
-    for (const player of this.players) {
-      const pos  = player.body.GetPosition();
-      const vel  = player.body.GetLinearVelocity();
-      player.x  = pos.x;
-      player.y  = pos.y;
-      player.lx = vel.x;
-      player.ly = vel.y;
-    }
+syncPlayers() {
+  for (const player of this.players) {
+    const pos  = player.body.GetPosition();
+    const vel  = player.body.GetLinearVelocity();
+    player.x  = pos.x;
+    player.y  = pos.y;
+    player.lx = vel.x;
+    player.ly = vel.y;
+    player.a  = player.body.GetAngle();  // ← missing
   }
+}
 
   createMap() {
     this.clearTiles();

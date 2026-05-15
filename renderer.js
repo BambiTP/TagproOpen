@@ -170,13 +170,14 @@ drawTile(x, y, id) {
   start() {
     this.createMap();
 
-    this.app.ticker.add(() => {
-      for (const player of game.players) { 
-        if (!player.container) continue;
-        player.container.x = player.x * GRID_SIZE;
-        player.container.y = player.y * GRID_SIZE;
-      }
-    });
+this.app.ticker.add(() => {
+  for (const player of game.players) {
+    if (!player.container) continue;
+    player.container.x = player.x * GRID_SIZE;
+    player.container.y = player.y * GRID_SIZE;
+    player.container.rotation = player.a;  // rotate the whole container
+  }
+});
   }
 
 setCamera(x, y, zoom = 1) {
