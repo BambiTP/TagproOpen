@@ -90,7 +90,7 @@ function applyBoost(player) {
 function scheduleChangeState(x, y, state, id) {
   Promise.resolve().then(() => {
     if (!game) return;
-    const tileData = game.dataMap[x][y]
+    const tileData = game.dataMap[y][x]
     if (tileData) tileData.state = state;
     if (renderer) renderer.changeTile(x, y, id);
   });
