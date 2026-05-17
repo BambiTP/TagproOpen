@@ -41,7 +41,9 @@
     jukeJuiceMaxSpeed: 2.5 * TPU,
     gravityWellRadius: 0.4 * 4 * TPU,
     gravityWellStrength: 0.025 * TPU,
-    powerupRespawn:     60000,
+    powerupRespawn:     5000,
+    tagproTimer:     20000,
+rollingBombTimer: 20000,
   };
 
     const IMAGE_MAP = {

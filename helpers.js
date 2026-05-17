@@ -96,40 +96,55 @@ let helper = {
     return false;
   },
 
-  popPlayer(player) {
-    this.returnFlag(player); // ← add this
-    this.applyExplosion(player.x, player.y, game.config.deathExploRadius, game.config.deathExploStrength);
+popPlayer(player) {
+  if (player.dead) return;
 
-    player.dead = true;
-    player.body.SetLinearVelocity(new Box2D.Common.Math.b2Vec2(0, 0));
-    player.body.SetType(Box2D.Dynamics.b2Body.b2_staticBody);
+  if (player.rollingBomb) {
+    player.rollingBomb = false;
+    this.applyExplosion(player.x, player.y, game.config.rollingBombRadius, game.config.rollingBombStrength);
+    return;
+  }
 
-    if (player.container) {
-      player.container.destroy();
-      player.container = null;
-      player.sprites = null;
-    }
+  player.dead = true;
 
-    setTimeout(() => this.respawnPlayer(player), 3000);
-  },
+  this.returnFlag(player);
+  this.applyExplosion(player.x, player.y, game.config.deathExploRadius, game.config.deathExploStrength);
 
+  player.body.SetLinearVelocity(new Box2D.Common.Math.b2Vec2(0, 0));
+  for (let f = player.body.GetFixtureList(); f; f = f.GetNext()) {
+    f.SetSensor(true);
+  }
+
+  if (player.container) {
+    player.container.destroy();
+    player.container = null;
+    player.sprites = null;
+  }
+
+  setTimeout(() => this.respawnPlayer(player), 3000);
+},
+
+respawnPlayer(player) {
+  const sp    = game.spawnPool[player.team];
+  const point = sp[Math.floor(Math.random() * sp.length)];
+
+  for (let f = player.body.GetFixtureList(); f; f = f.GetNext()) {
+    f.SetSensor(false);
+  }
+
+  player.body.SetType(Box2D.Dynamics.b2Body.b2_dynamicBody);
+  player.body.SetPosition(new Box2D.Common.Math.b2Vec2(point.x, point.y));
+  player.x = point.x;
+  player.y = point.y;
+  player.dead = false;
+
+  renderer.drawPlayer(player.id);
+},
   pickSpawnPoint(team) {
     const pool = game.spawnPool[team];
     return pool[Math.floor(Math.random() * pool.length)];
   },
 
-  respawnPlayer(player) {
-    const sp    = game.spawnPool[player.team];
-    const point = sp[Math.floor(Math.random() * sp.length)];
-
-    player.body.SetType(Box2D.Dynamics.b2Body.b2_dynamicBody);
-    player.body.SetPosition(new Box2D.Common.Math.b2Vec2(point.x, point.y));
-    player.x = point.x;
-    player.y = point.y;
-    player.dead = false;
-
-    renderer.drawPlayer(player.id);
-  },
 
   /**
    * Boost a single player in the direction they're already
@@ -170,5 +185,42 @@ let helper = {
     this.applyExplosion(x + 0.5, y + 0.5, game.config.bombRadius, game.config.bombStrength);
     this.scheduleTileChange(x, y, 10.1);
     setTimeout(() => this.scheduleTileChange(x, y, 10), game.config.bombCooldown);
-  }
+  },
+
+startPowerups() {
+  setTimeout(() => {
+    if (!game) return;
+
+    const powerupStates = ['JukeJuice', 'RollingBomb', 'Tagpro'];
+    const stateToId = {
+      'JukeJuice':   6.1,
+      'RollingBomb': 6.2,
+      'Tagpro':      6.3
+    };
+
+    for (let y = 0; y < game.dataMap.length; y++) {
+      if (!game.dataMap[y]) continue;
+      for (let x = 0; x < game.dataMap[y].length; x++) {
+        const tile = game.dataMap[y][x];
+        if (!tile?.body) continue;
+
+        const ud = tile.body.GetUserData();
+        if (ud?.category !== 'powerup') continue;
+        if (tile.state && tile.state !== 'empty') continue;
+
+        const randomState = powerupStates[Math.floor(Math.random() * powerupStates.length)];
+        const targetId    = stateToId[randomState];
+
+        tile.state = randomState;
+        this.scheduleChangeState(x, y, randomState, targetId);
+      }
+    }
+  }, game.config.powerupRespawn);
+}
+
+
+
+
+
+
 };

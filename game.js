@@ -52,6 +52,7 @@ class Game {
 
   moveBalls() {
     for (const p of this.players) {
+      if(p.dead){ break;}
       const body  = p.body;
       const max   = p.maxSpeed;
       const accel = p.accel;
@@ -287,7 +288,7 @@ syncPlayers() {
       }));
     }
   }
-  
+
   makeBody(id, x, y) {
     const tileData = this.physicsLookup[id];
     if (!tileData) return null;

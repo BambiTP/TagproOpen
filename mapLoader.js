@@ -22,7 +22,7 @@ const COLOR_TO_ID = {
   'ff8000': 10,    // Bomb
   'b97a57': 8,     // Button
   '007500': 9,     // Gate (overridden by JSON)
-  '00ff00': 6.1,   // Powerup
+  '00ff00': 6,     // Powerup
   'cac000': 13,    // Portal
   'cc3300': 24,    // RedPortal
   '0066cc': 25,    // BluePortal

@@ -2,11 +2,15 @@
 // Fires once when two bodies first touch
 // ------------------------------------------------------------
 function handlePlayerPlayerBegin(player, other) {
-  if (player.id >= other.id) return;      // handle each pair once
-  if (player.team === other.team) return; // ignore teammates
+  if (player.id >= other.id) return;
+  if (player.team === other.team) return;
 
   const pHas = !!player.hasFlag;
   const oHas = !!other.hasFlag;
+
+  // Tagpro: pop the other, don't die yourself
+  if (player.tagpro) { helper.popPlayer(other);  return; }
+  if (other.tagpro)  { helper.popPlayer(player); return; }
 
   if (pHas && oHas) {
     helper.returnFlag(player); helper.returnFlag(other);
@@ -174,9 +178,52 @@ function handlePlayerBegin(player, other) {
       break;
     }
 
-    case 'powerup':
-      console.log('pickupPowerup', player.id, other.tileId);
-      break;
+case 'powerup': {
+  const tile = game.dataMap[other.y]?.[other.x];
+  if (!tile || !tile.state || tile.state === 'empty') break;
+
+  const state = tile.state;
+
+if (state === 'JukeJuice') {
+  player.jukeJuice = true;
+  player.maxSpeed = game.config.jukeJuiceMaxSpeed;
+  player.accel    = game.config.jukeJuiceAccel;
+  clearTimeout(player.jukeJuiceTimer);
+  player.jukeJuiceTimer = setTimeout(() => {
+    player.jukeJuice = false;
+    player.maxSpeed = game.config.maxSpeed;
+    player.accel    = game.config.accel;
+  }, game.config.jukeJuiceTimer);
+} else if (state === 'Tagpro') {
+  player.tagpro = true;
+  clearTimeout(player.tagproTimer);
+  player.tagproTimer = setTimeout(() => {
+    player.tagpro = false;
+  }, game.config.tagproTimer);
+} else if (state === 'RollingBomb') {
+  player.rollingBomb = true;
+  clearTimeout(player.rollingBombTimer);
+  player.rollingBombTimer = setTimeout(() => {
+    player.rollingBomb = false;
+  }, game.config.rollingBombTimer);
+}
+
+  // Empty the tile immediately
+  tile.state = 'empty';
+  helper.scheduleChangeState(other.x, other.y, 'empty', 6);
+
+  // Respawn a random pup after 60s
+  setTimeout(() => {
+    if (!game) return;
+    const powerupStates = ['JukeJuice', 'RollingBomb', 'Tagpro'];
+    const stateToId = { JukeJuice: 6.1, RollingBomb: 6.2, Tagpro: 6.3 };
+    const newState = powerupStates[Math.floor(Math.random() * powerupStates.length)];
+    tile.state = newState;
+    helper.scheduleChangeState(other.x, other.y, newState, stateToId[newState]);
+  }, game.config.powerupRespawn);
+
+  break;
+}
 
     case 'portal': {
       if (!other.portalDest || other.portalOnCooldown || player.portalCooldown) break;
@@ -218,24 +265,25 @@ function handlePlayerBegin(player, other) {
       helper.schedulePlayerTeleport(player, blueDest.x + 0.5, blueDest.y + 0.5);
       break;
     }
-    case 'yellowTeamTile': {
-      player.teamTileCount = (player.teamTileCount ?? 0) + 1;
-      player.maxSpeed = game.config.teamTileMaxSpeed;
-      player.accel    = game.config.teamTileAccel;
+   case 'yellowTeamTile': {
+      if (player.hasFlag) break; //
+      player.teamTileCount = (player.teamTileCount ?? 0) + 1; //
+      player.maxSpeed = game.config.teamTileMaxSpeed; //
+      player.accel    = game.config.teamTileAccel; //
       break;
     }
     case 'redTeamTile': {
-      if (player.team !== 'red') break;
-      player.teamTileCount = (player.teamTileCount ?? 0) + 1;
-      player.maxSpeed = game.config.teamTileMaxSpeed;
-      player.accel    = game.config.teamTileAccel;
+      if (player.hasFlag || player.team !== 'red') break; //
+      player.teamTileCount = (player.teamTileCount ?? 0) + 1; //
+      player.maxSpeed = game.config.teamTileMaxSpeed; //
+      player.accel    = game.config.teamTileAccel; //
       break;
     }
     case 'blueTeamTile': {
-      if (player.team !== 'blue') break;
-      player.teamTileCount = (player.teamTileCount ?? 0) + 1;
-      player.maxSpeed = game.config.teamTileMaxSpeed;
-      player.accel    = game.config.teamTileAccel;
+      if (player.hasFlag || player.team !== 'blue') break; //
+      player.teamTileCount = (player.teamTileCount ?? 0) + 1; //
+      player.maxSpeed = game.config.teamTileMaxSpeed; //
+      player.accel    = game.config.teamTileAccel; //
       break;
     }
     case 'gravityWell':
