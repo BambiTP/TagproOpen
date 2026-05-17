@@ -3,9 +3,7 @@
 
 ## Gameplay
 
-* flag logic
 * mars ball logic
-* super boosts
 * powerups
 
 ## Engine / Structure

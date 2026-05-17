@@ -287,7 +287,7 @@ syncPlayers() {
       }));
     }
   }
-
+  
   makeBody(id, x, y) {
     const tileData = this.physicsLookup[id];
     if (!tileData) return null;

@@ -37,8 +37,11 @@
 
     teamTileAccel:    0.037 * TPU,
     teamTileMaxSpeed: 5     * TPU,
+    jukeJuiceAccel:   0.031 * TPU,
+    jukeJuiceMaxSpeed: 2.5 * TPU,
     gravityWellRadius: 0.4 * 4 * TPU,
     gravityWellStrength: 0.025 * TPU,
+    powerupRespawn:     60000,
   };
 
     const IMAGE_MAP = {
