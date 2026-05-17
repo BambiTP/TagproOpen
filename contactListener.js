@@ -389,19 +389,21 @@ case 'bluePortal': {
   break;
 }
 case 'yellowTeamTile': {
+  player.teamTileCount = (player.teamTileCount ?? 0) + 1;
   player.maxSpeed = game.config.teamTileMaxSpeed;
   player.accel    = game.config.teamTileAccel;
-  console.log(player.maxSpeed);
   break;
 }
 case 'redTeamTile': {
   if (player.team !== 'red') break;
+  player.teamTileCount = (player.teamTileCount ?? 0) + 1;
   player.maxSpeed = game.config.teamTileMaxSpeed;
   player.accel    = game.config.teamTileAccel;
   break;
 }
 case 'blueTeamTile': {
   if (player.team !== 'blue') break;
+  player.teamTileCount = (player.teamTileCount ?? 0) + 1;
   player.maxSpeed = game.config.teamTileMaxSpeed;
   player.accel    = game.config.teamTileAccel;
   break;
@@ -446,21 +448,29 @@ case 'gravityWellField':
   gravityWellStop(player, other);
   break;
 case 'yellowTeamTile': {
-  player.maxSpeed = game.config.maxSpeed;
-  player.accel    = game.config.accel;
-  console.log(player.maxSpeed)
+  player.teamTileCount = Math.max(0, (player.teamTileCount ?? 1) - 1);
+  if (player.teamTileCount === 0) {
+    player.maxSpeed = game.config.maxSpeed;
+    player.accel    = game.config.accel;
+  }
   break;
 }
 case 'redTeamTile': {
   if (player.team !== 'red') break;
-  player.maxSpeed = game.config.maxSpeed;
-  player.accel    = game.config.accel;
+  player.teamTileCount = Math.max(0, (player.teamTileCount ?? 1) - 1);
+  if (player.teamTileCount === 0) {
+    player.maxSpeed = game.config.maxSpeed;
+    player.accel    = game.config.accel;
+  }
   break;
 }
 case 'blueTeamTile': {
   if (player.team !== 'blue') break;
-  player.maxSpeed = game.config.maxSpeed;
-  player.accel    = game.config.accel;
+  player.teamTileCount = Math.max(0, (player.teamTileCount ?? 1) - 1);
+  if (player.teamTileCount === 0) {
+    player.maxSpeed = game.config.maxSpeed;
+    player.accel    = game.config.accel;
+  }
   break;
 }
 

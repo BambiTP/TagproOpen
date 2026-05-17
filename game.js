@@ -108,7 +108,7 @@ class Game {
 
       ghost: false, hasFlag: false,
       tagpro: false, bomb: false, speed: false, grip: false,
-      dead: false,
+      dead: false,teamTileCount: 0
     };
 
     body.SetUserData(player);
