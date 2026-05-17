@@ -33,7 +33,28 @@ class Renderer {
     }
     return this.layers[name];
   }
+attachFlag(playerId, flagId) {
+  const player = game.players[playerId];
+  if (!player?.sprites?.flagLayer) return;
 
+  this.detachFlag(playerId);
+
+  const tex = this.sprites[flagId];
+  if (!tex) return;
+
+  const flag = new PIXI.Sprite(tex);
+  flag.anchor.set(0.5);
+  player.sprites.flagLayer.addChild(flag);
+  player.flagSprite = flag;
+}
+
+detachFlag(playerId) {
+  const player = game.players[playerId];
+  if (!player?.flagSprite) return;
+  player.sprites.flagLayer.removeChild(player.flagSprite);
+  player.flagSprite.destroy();
+  player.flagSprite = null;
+}
   async loadTextures(imageMap) {
     for (const [key, url] of Object.entries(imageMap)) {
       if (this.spriteSheets[key]) continue;
@@ -146,50 +167,61 @@ drawTile(x, y, id) {
   }
 
   drawPlayer(id) {
-    const player = game.players[id];
-    const ballId = player.team === 'red' ? 'redball' : 'blueball';
-    const tex = this.sprites[ballId];
-    if (!tex) return;
+  const player = game.players.find(p => p.id === id);
+  const ballId = player.team === 'red' ? 'redball' : 'blueball';
+  const tex = this.sprites[ballId];
+  if (!tex) return;
 
-    const sprite = new PIXI.Sprite(tex);
-    sprite.anchor.set(0.5);
+  // Root container — positioned each tick, never rotated
+  const container = new PIXI.Container();
 
-    const container = new PIXI.Container();
-    container.addChild(sprite);
-    container.x = player.x * GRID_SIZE;
-    container.y = player.y * GRID_SIZE;
+  // Ball layer — rotation applied here
+  const ballContainer = new PIXI.Container();
+  const actualBall = new PIXI.Sprite(tex);
+  actualBall.anchor.set(0.5);
+  ballContainer.addChild(actualBall);
+  container.addChild(ballContainer);
 
-    this.getLayer('players').addChild(container);
+  // Info layer — sits alongside ball, never rotates
+  const infoContainer = new PIXI.Container();
+  const flagLayer = new PIXI.Container();
+  flagLayer.position.set(13, -32);
+  infoContainer.addChild(flagLayer);
+  container.addChild(infoContainer);
 
-    player.sprite    = sprite;
-    player.container = container;
+  this.getLayer('players').addChild(container);
 
-    return container;
-  }
+  player.container        = container;
+  player.sprites          = player.sprites ?? {};
+  player.sprites.ball     = ballContainer;
+  player.sprites.actualBall = actualBall;
+  player.sprites.info     = infoContainer;
+  player.sprites.flagLayer = flagLayer;
 
-  start() {
+  return container;
+}
+start() {
     this.createMap();
 
-this.app.ticker.add(() => {
-  for (const player of game.players) {
-    if (!player.container) continue;
-    player.container.x = player.x * GRID_SIZE;
-    player.container.y = player.y * GRID_SIZE;
-    player.container.rotation = player.a;  // rotate the whole container
-  }
-});
+    this.app.ticker.add(() => {
+      for (const player of game.players) {
+        if (!player.container) continue;
+        player.container.x = player.x * GRID_SIZE;
+        player.container.y = player.y * GRID_SIZE;
+        player.sprites.ball.rotation = player.a;
+      }
+    });
   }
 
 setCamera(x, y, zoom = 1) {
-  this.camera.x = x;
-  this.camera.y = y;
-  this.camera.zoom = zoom;
+    this.camera.x = x;
+    this.camera.y = y;
+    this.camera.zoom = zoom;
 
-  this.world.scale.set(zoom);
-  this.world.x = (this.app.renderer.width  / 2) - (x * GRID_SIZE * zoom);
-  this.world.y = (this.app.renderer.height / 2) - (y * GRID_SIZE * zoom);
-}
-
+    this.world.scale.set(zoom);
+    this.world.x = (this.app.renderer.width  / 2) - (x * GRID_SIZE * zoom);
+    this.world.y = (this.app.renderer.height / 2) - (y * GRID_SIZE * zoom);
+  }
   destroy() {
     this.stop();
     this.app.destroy(true, { children: true, texture: false, baseTexture: false });

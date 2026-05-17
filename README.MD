@@ -3,10 +3,7 @@
 
 ## Gameplay
 
-* gate logic
 * flag logic
-* team tile logic
-* gravity well logic
 * mars ball logic
 * super boosts
 * powerups

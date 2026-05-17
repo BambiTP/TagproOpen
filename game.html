@@ -31,17 +31,25 @@
   window.addEventListener('keydown', e => handleKey(e.key, true));
   window.addEventListener('keyup',   e => handleKey(e.key, false));
 
-function handleKey(key, down) {
-  const p = game?.players.find(p => p.id === 0);
-  if (!p) return;
+  function handleKey(key, down) {
+    const red  = game?.players.find(p => p.id === 0);   // Arrow keys
+    const blue = game?.players.find(p => p.id === 1);   // WASD
 
-  switch (key) {
-    case 'a': case 'A': case 'j': case 'J': case 'ArrowLeft':  p.left  = down; break;
-    case 'd': case 'D': case 'l': case 'L': case 'ArrowRight': p.right = down; break;
-    case 'w': case 'W': case 'i': case 'I': case 'ArrowUp':    p.up    = down; break;
-    case 's': case 'S': case 'k': case 'K': case 'ArrowDown':  p.down  = down; break;
+    switch (key) {
+      // ── Red player (arrow keys) ──
+      case 'ArrowLeft':  if (red)  red.left  = down; break;
+      case 'ArrowRight': if (red)  red.right = down; break;
+      case 'ArrowUp':    if (red)  red.up    = down; break;
+      case 'ArrowDown':  if (red)  red.down  = down; break;
+
+      // ── Blue player (WASD) ──
+      case 'a': case 'A': if (blue) blue.left  = down; break;
+      case 'd': case 'D': if (blue) blue.right = down; break;
+      case 'w': case 'W': if (blue) blue.up    = down; break;
+      case 's': case 'S': if (blue) blue.down  = down; break;
+    }
   }
-}
+
   // ─── Start ────────────────────────────────────────────────────────────────
   async function start() {
     game = new Game(gameConfig);
@@ -54,17 +62,24 @@ function handleKey(key, down) {
     game.createMap();
     game.applyPortalData(portals);
     game.applySwitchData(switches);
+
+    // Spawn both players
     game.spawnPlayer(0, 'red');
+    game.spawnPlayer(1, 'blue');
 
     renderer = new Renderer(document.getElementById('canvas'));
     await renderer.init();
     await renderer.loadTextures(IMAGE_MAP);
     renderer.start();
-    renderer.drawPlayer(0);
 
+    // Draw both players
+    renderer.drawPlayer(0);
+    renderer.drawPlayer(1);
+
+    // Camera follows red (id 0)
     renderer.app.ticker.add(() => {
-      const local = game.players.find(p => p.id === 0);
-      if (local) renderer.setCamera(local.x, local.y);
+      const red = game.players.find(p => p.id === 0);
+      if (red) renderer.setCamera(red.x, red.y);
     });
 
     game.start();

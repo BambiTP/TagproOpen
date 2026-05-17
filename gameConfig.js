@@ -1,7 +1,7 @@
   const TPU = 2.5;
 
 
-  const MAP_ID = 97654;
+  const MAP_ID = 74532;
 
 
   const gameConfig = {

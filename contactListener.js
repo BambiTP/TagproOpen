@@ -47,17 +47,65 @@ for (const player of game.players) {
     ));
   }
 }
+function pickupFlag(player, other) {
+  if (player.hasFlag) return;
+  const id = game.map[other.y][other.x];
+  if (id !== 3 && id !== 4 && id !== 16) return;
+  player.hasFlag = { flagId: id, originX: other.x, originY: other.y };
+  console.log(`[pickupFlag] Player ${player.id} picked up flag ${id} at (${other.x}, ${other.y})`);
+  scheduleTileChange(other.x, other.y, id + 0.1);
+  renderer.attachFlag(player.id, id);          // ← draw flag on ball
+}
+
+function returnFlag(player) {
+  if (!player.hasFlag) return;
+  const { flagId, originX, originY } = player.hasFlag;
+  player.hasFlag = false;
+  console.log(`[returnFlag] Flag ${flagId} returned to origin (${originX}, ${originY})`);
+  scheduleTileChange(originX, originY, flagId);
+  renderer.detachFlag(player.id);              // ← remove flag from ball
+}
+
+function transferFlag(from, to) {
+  to.hasFlag = from.hasFlag;
+  from.hasFlag = false;
+  console.log(`[transferFlag] Flag transferred from player ${from.id} to player ${to.id}`);
+  renderer.detachFlag(from.id);                // ← remove from passer
+  renderer.attachFlag(to.id, to.hasFlag.flagId); // ← attach to receiver
+}
+
+
+function captureFlag(player) {
+  if (!game.scores) game.scores = { red: 0, blue: 0 };
+  game.scores[player.team]++;
+  console.log(`[captureFlag] Player ${player.id} (${player.team}) captured the flag! Scores:`, game.scores);
+  returnFlag(player);
+}
+
+function isFlagInBase(team) {
+  const id = team === 'red' ? 3 : 4;
+  for (let y = 0; y < game.map.length; y++)
+    for (let x = 0; x < game.map[y].length; x++)
+      if (game.map[y][x] === id) {
+        console.log(`[isFlagInBase] ${team} flag is in base at (${x}, ${y})`);
+        return true;
+      }
+  console.log(`[isFlagInBase] ${team} flag is NOT in base`);
+  return false;
+}
 function popPlayer(player) {
+  returnFlag(player); // ← add this
   applyExplosion(player.x, player.y, game.config.deathExploRadius, game.config.deathExploStrength);
 
   player.dead = true;
   player.body.SetLinearVelocity(new Box2D.Common.Math.b2Vec2(0, 0));
   player.body.SetType(Box2D.Dynamics.b2Body.b2_staticBody);
 
-  if (player.sprite) {
-    player.sprite.destroy();
-    player.sprite = null;
-  }
+if (player.container) {
+  player.container.destroy();
+  player.container = null;
+  player.sprites = null;
+}
 
   setTimeout(() => respawnPlayer(player), 3000);
 }
@@ -122,10 +170,37 @@ function triggerBomb(x, y) {
 // ------------------------------------------------------------
 // Fires once when two bodies first touch
 // ------------------------------------------------------------
+function handlePlayerPlayerBegin(player, other) {
+  if (player.id >= other.id) return;      // handle each pair once
+  if (player.team === other.team) return; // ignore teammates
+
+  const pHas = !!player.hasFlag;
+  const oHas = !!other.hasFlag;
+
+  if (pHas && oHas) {
+    returnFlag(player); returnFlag(other);
+    popPlayer(player);  popPlayer(other);
+    return;
+  }
+  if (pHas) {
+    if (player.hasFlag.flagId === 16) transferFlag(player, other);
+    else returnFlag(player);
+    popPlayer(player);
+    return;
+  }
+  if (oHas) {
+    if (other.hasFlag.flagId === 16) transferFlag(other, player);
+    else returnFlag(other);
+    popPlayer(other);
+  }
+}
 
 function handlePlayerBegin(player, other) {
-  const cfg = game.config;
 
+if (other?.isPlayer) {
+  handlePlayerPlayerBegin(player, other);
+  return;
+}
   switch (other.category) {
 case 'spike':
   popPlayer(player);
@@ -235,17 +310,39 @@ case 'button': {
       popPlayer(player);
       break;
 
-    case 'redFlag':
-      if (player.team === 'blue') console.log('pickupRedFlag',    player.id);
-      break;
+    case 'redFlag': {
+  const mapId = game.map[other.y][other.x];
+  if (mapId !== 3) break;
+  if (player.team === 'red' && player.hasFlag)  captureFlag(player);
+  if (player.team === 'blue' && !player.hasFlag) pickupFlag(player, other);
+  break;
+}
 
-    case 'blueFlag':
-      if (player.team === 'red')  console.log('pickupBlueFlag',   player.id);
-      break;
+case 'blueFlag': {
+  const mapId = game.map[other.y][other.x];
+  if (mapId !== 4) break;
+  if (player.team === 'blue' && player.hasFlag) captureFlag(player);
+  if (player.team === 'red' && !player.hasFlag) pickupFlag(player, other);
+  break;
+}
 
-    case 'yellowFlag':
-      console.log('pickupYellowFlag', player.id);
-      break;
+case 'yellowFlag': {
+  if (game.map[other.y][other.x] !== 16) break;
+  if (!player.hasFlag) pickupFlag(player, other);
+  break;
+}
+
+case 'redGoal': {
+  if (player.team === 'red' && player.hasFlag)
+    if (player.hasFlag.flagId === 16 || isFlagInBase('red')) captureFlag(player);
+  break;
+}
+
+case 'blueGoal': {
+  if (player.team === 'blue' && player.hasFlag)
+    if (player.hasFlag.flagId === 16 || isFlagInBase('blue')) captureFlag(player);
+  break;
+}
 
     case 'powerup':
       console.log('pickupPowerup', player.id, other.tileId);
@@ -291,25 +388,24 @@ case 'bluePortal': {
   schedulePlayerTeleport(player, blueDest.x + 0.5, blueDest.y + 0.5);
   break;
 }
-case 'yellowTeamTile':
-case 'redTeamTile':
-case 'blueTeamTile': {
-  if (other.category === 'redTeamTile'  && player.team !== 'red')  break;
-  if (other.category === 'blueTeamTile' && player.team !== 'blue') break;
-
-player.maxSpeed = game.config.teamTileMaxSpeed;
-player.accel    = game.config.teamTileAccel;
+case 'yellowTeamTile': {
+  player.maxSpeed = game.config.teamTileMaxSpeed;
+  player.accel    = game.config.teamTileAccel;
+  console.log(player.maxSpeed);
   break;
 }
-
-    case 'redGoal':
-      if (player.team === 'red'  && player.hasFlag) console.log('score red',  player.id);
-      break;
-
-    case 'blueGoal':
-      if (player.team === 'blue' && player.hasFlag) console.log('score blue', player.id);
-      break;
-
+case 'redTeamTile': {
+  if (player.team !== 'red') break;
+  player.maxSpeed = game.config.teamTileMaxSpeed;
+  player.accel    = game.config.teamTileAccel;
+  break;
+}
+case 'blueTeamTile': {
+  if (player.team !== 'blue') break;
+  player.maxSpeed = game.config.teamTileMaxSpeed;
+  player.accel    = game.config.teamTileAccel;
+  break;
+}
 case 'gravityWell':
   popPlayer(player);
   break;
@@ -349,12 +445,20 @@ case 'button': {
 case 'gravityWellField':
   gravityWellStop(player, other);
   break;
-case 'yellowTeamTile':
-case 'redTeamTile':
+case 'yellowTeamTile': {
+  player.maxSpeed = game.config.maxSpeed;
+  player.accel    = game.config.accel;
+  console.log(player.maxSpeed)
+  break;
+}
+case 'redTeamTile': {
+  if (player.team !== 'red') break;
+  player.maxSpeed = game.config.maxSpeed;
+  player.accel    = game.config.accel;
+  break;
+}
 case 'blueTeamTile': {
-  if (other.category === 'redTeamTile'  && player.team !== 'red')  break;
-  if (other.category === 'blueTeamTile' && player.team !== 'blue') break;
-
+  if (player.team !== 'blue') break;
   player.maxSpeed = game.config.maxSpeed;
   player.accel    = game.config.accel;
   break;
