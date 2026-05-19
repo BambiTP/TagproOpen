@@ -31,5 +31,9 @@
 * multiplayer + game loop are probably hardest remaining parts
 
 ## Bugs
-
+* fix portals sometimes infinitly teleporting you back and forth
 * fix dynamic tile wiggle
+* make player pops mare accurate (Maybe make it at contact pont instead of center? Idk 
+* make rolling bomb not affect user
+* people say that bumps are more powerful than they should be but im not sure about that? 
+* 
