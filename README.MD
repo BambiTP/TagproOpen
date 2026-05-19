@@ -1,4 +1,6 @@
 [https://bambitp.github.io/TagproOpen/game.html](https://bambitp.github.io/TagproOpen/game.html)
+
+Want to help me develop this? join [https://discord.gg/NeVQuCzS](https://discord.gg/NeVQuCzS)
 # TODO
 
 ## Gameplay
