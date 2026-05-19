@@ -4,7 +4,6 @@
 ## Gameplay
 
 * mars ball logic
-* powerups
 
 ## Engine / Structure
 
@@ -13,7 +12,7 @@
 * split into client/server for multiplayer
 
 ## Polish
-
+* powerup indicators
 * animations
 * sounds
 
