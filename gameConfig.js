@@ -44,6 +44,7 @@
     powerupRespawn:     5000,
     tagproTimer:     20000,
 rollingBombTimer: 20000,
+jukeJuiceTimer: 20000,
   };
 
     const IMAGE_MAP = {

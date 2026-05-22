@@ -96,14 +96,21 @@ let helper = {
     return false;
   },
 
+
+
 popPlayer(player) {
   if (player.dead) return;
 
-  if (player.rollingBomb) {
-    player.rollingBomb = false;
-    this.applyExplosion(player.x, player.y, game.config.rollingBombRadius, game.config.rollingBombStrength);
-    return;
-  }
+if (player.rollingBomb) {
+  player.rollingBomb = false;
+  const pos = player.body.GetPosition();
+  this.applyExplosion(
+    pos.x, pos.y,   // ← guaranteed accurate
+    game.config.rollingBombRadius,
+    game.config.rollingBombStrength
+  );
+  return;
+}
 
   player.dead = true;
 

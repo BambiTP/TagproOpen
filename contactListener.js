@@ -9,27 +9,39 @@ function handlePlayerPlayerBegin(player, other) {
   const oHas = !!other.hasFlag;
 
   // Tagpro: pop the other, don't die yourself
-  if (player.tagpro) { helper.popPlayer(other);  return; }
-  if (other.tagpro)  { helper.popPlayer(player); return; }
+if (player.tagpro) {
+  helper.popPlayer(other);
+  if (player.hasFlag) helper.popPlayer(player);
+  return;
+}
+if (other.tagpro) {
+  helper.popPlayer(player);
+  if (other.hasFlag) helper.popPlayer(other);
+  return;
+}
 
   if (pHas && oHas) {
     helper.returnFlag(player); helper.returnFlag(other);
     helper.popPlayer(player);  helper.popPlayer(other);
     return;
   }
-  if (pHas) {
+if (pHas) {
+  if (!player.rollingBomb) {
     if (player.hasFlag.flagId === 16) helper.transferFlag(player, other);
     else helper.returnFlag(player);
-    helper.popPlayer(player);
-    return;
   }
-  if (oHas) {
-    if (other.hasFlag.flagId === 16) helper.transferFlag(other, player);
-    else helper.returnFlag(other);
-    helper.popPlayer(other);
-  }
+  helper.popPlayer(player);
+  return;
 }
 
+if (oHas) {
+  if (!other.rollingBomb) {
+    if (other.hasFlag.flagId === 16) helper.transferFlag(other, player);
+    else helper.returnFlag(other);
+  }
+  helper.popPlayer(other);
+}
+}
 function handlePlayerBegin(player, other) {
 
   if (other?.isPlayer) {
