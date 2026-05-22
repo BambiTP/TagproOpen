@@ -35,7 +35,8 @@ Want to help me develop this? join [https://discord.gg/NeVQuCzS](https://discord
 ## Bugs
 * fix portals sometimes infinitly teleporting you back and forth
 * fix dynamic tile wiggle
-* make player pops mare accurate (Maybe make it at contact pont instead of center? Idk 
-* make rolling bomb not affect user
+* make player explosions mare accurate (Maybe make it at contact pont instead of center? Idk 
 * people say that bumps are more powerful than they should be but im not sure about that? 
+* Gates don't pop you instantly
+* When you die on a button or gravity well you still affect it
 * 
