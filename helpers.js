@@ -159,15 +159,19 @@ respawnPlayer(player) {
    * No-ops when the ball is nearly stationary.
    */
   applyBoost(player) {
-    const vel   = player.body.GetLinearVelocity();
-    const speed = Math.sqrt(vel.x * vel.x + vel.y * vel.y);
-    if (speed < 1e-4) return;
-
-    const target     = player.maxSpeed * game.config.boostMultiplier;
-    const multiplier = target / speed;
-    player.body.SetLinearVelocity(
-      new Box2D.Common.Math.b2Vec2(vel.x * multiplier, vel.y * multiplier)
-    );
+    const vel = player.body.GetLinearVelocity();
+    let dx = vel.x, dy = vel.y;
+    // nearly stopped: boost in the direction of the held keys
+    if (Math.hypot(dx, dy) < 1e-3) {
+      dx = (player.right ? 1 : 0) - (player.left ? 1 : 0);
+      dy = (player.down  ? 1 : 0) - (player.up   ? 1 : 0);
+    }
+    // Real TagPro scales the velocity so its LARGER axis equals 3x top speed (so a straight boost
+    // is exactly 3x top speed and a perfect diagonal is up to sqrt(2) times that).
+    const larger = Math.max(Math.abs(dx), Math.abs(dy));
+    if (larger < 1e-6) return;
+    const k = player.maxSpeed * game.config.boostMultiplier / larger;
+    player.body.SetLinearVelocity(new Box2D.Common.Math.b2Vec2(dx * k, dy * k));
   },
 
   scheduleChangeState(x, y, state, id) {

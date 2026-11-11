@@ -16,19 +16,23 @@
     accel:          0.025 * TPU,
     maxSpeed:       2.5   * TPU,
 
-    boostMultiplier:     2.9,
+    // Explosion: speed added = strength * (radius - distance). This world is TPU times bigger than
+    // real TagPro, which scales distance and speed alike, so the strengths below are NOT times TPU.
+    // Values fitted to real ranked replays (radii in tiles: bomb 7, rolling bomb 4.25, pop 3.5, portal 4).
+    // A boost sets your speed to 3x your current top speed (7.5 m/s normally, 15 on a team tile).
+    boostMultiplier:     3,
 
-    bombRadius:          0.4 * 7   * TPU,
-    bombStrength:        1.25      * TPU,
+    bombRadius:          0.4 * 7    * TPU,
+    bombStrength:        3.90,
 
-    rollingBombRadius:   0.4 * 5   * TPU,
-    rollingBombStrength: 0.75      * TPU,
+    rollingBombRadius:   0.4 * 4.25 * TPU,
+    rollingBombStrength: 3.31,
 
-    portalExploRadius:   0.4 * 4   * TPU,
-    portalExploStrength: 0.25      * TPU,
+    portalExploRadius:   0.4 * 4    * TPU,
+    portalExploStrength: 1.36,
 
-    deathExploRadius:    0.4 * 3.5 * TPU,
-    deathExploStrength:  0.25      * TPU,
+    deathExploRadius:    0.4 * 3.5  * TPU,
+    deathExploStrength:  1.56,
 
     boostCooldown:     10000,
     redBoostCooldown:  10000,
