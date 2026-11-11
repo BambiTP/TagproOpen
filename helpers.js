@@ -22,12 +22,64 @@ let helper = {
     wellData.pulledPlayers?.delete(player);
   },
 
+  // A portal teleport lands on the NEXT tick (runPendingTeleports, start of step()).
   schedulePlayerTeleport(player, x, y) {
-    Promise.resolve().then(() => {
+    (game.pendingTeleports ||= []).push({ player, x, y, tick: game.tickCount || 0 });
+  },
+
+  runPendingTeleports() {
+    const q = game.pendingTeleports;
+    if (!q || !q.length) return;
+    const due = q.filter(t => t.tick < game.tickCount);
+    game.pendingTeleports = q.filter(t => t.tick >= game.tickCount);
+    for (const { player, x, y } of due) {
       player.body.SetPosition(new Box2D.Common.Math.b2Vec2(x, y));
       player.x = x;
       player.y = y;
-    });
+    }
+  },
+
+  // Tile contacts are collected during the physics step and handled at the start of the next tick
+  // (the real server checks tiles at the start of the tick, before the step).
+  runPendingContacts() {
+    const q = game.pendingContacts;
+    if (!q || !q.length) return;
+    game.pendingContacts = [];
+    for (const fn of q) fn();
+  },
+
+  // id of the 8-connected group of gate tiles that (x, y) belongs to; one group counts as one gate
+  gateGroup(x, y) {
+    if (!game.gateGroups) {
+      const groups = {}, isGate = (a, b) => Math.floor(parseFloat(game.map[b]?.[a])) === 9;
+      let next = 0;
+      for (let b = 0; b < game.map.length; b++) {
+        for (let a = 0; a < game.map[b].length; a++) {
+          if (!isGate(a, b) || groups[a + ',' + b] !== undefined) continue;
+          const stack = [[a, b]]; groups[a + ',' + b] = next;
+          while (stack.length) {
+            const [u, v] = stack.pop();
+            for (let du = -1; du <= 1; du++) for (let dv = -1; dv <= 1; dv++) {
+              const k = (u + du) + ',' + (v + dv);
+              if (isGate(u + du, v + dv) && groups[k] === undefined) { groups[k] = next; stack.push([u + du, v + dv]); }
+            }
+          }
+          next++;
+        }
+      }
+      game.gateGroups = groups;
+    }
+    return game.gateGroups[x + ',' + y];
+  },
+
+  // a gate pops a ball once per tick per connected gate, so touching two gate tiles of the same
+  // gate can't pop a ball that a rolling bomb just saved
+  gatePop(player, other) {
+    const g = this.gateGroup(other.x, other.y);
+    player.gateHit ||= {};
+    if (player.gateHit[g] === game.tickCount) return;
+    player.gateHit[g] = game.tickCount;
+    this.popPlayer(player);
   },
 
   applyExplosion(cx, cy, radius, strength) {

@@ -145,15 +145,15 @@ function handlePlayerBegin(player, other) {
     }
 
     case 'redGate':
-      if (player.team !== 'red') helper.popPlayer(player);
+      if (player.team !== 'red') helper.gatePop(player, other);
       break;
 
     case 'blueGate':
-      if (player.team !== 'blue') helper.popPlayer(player);
+      if (player.team !== 'blue') helper.gatePop(player, other);
       break;
 
     case 'greenGate':
-      helper.popPlayer(player);
+      helper.gatePop(player, other);
       break;
 
     case 'redFlag': {
@@ -393,6 +393,13 @@ function handleObjectCollision(object, other, contact) {
 // Call this once and pass the result to world.SetContactListener()
 // ------------------------------------------------------------
 
+// Player-vs-player contacts are handled right away. Everything else (tiles) is queued and handled at
+// the start of the next tick, like the real server (see helper.runPendingContacts).
+function deferTile(other, fn) {
+  if (other?.isPlayer) { fn(); return; }
+  (game.pendingContacts ||= []).push(fn);
+}
+
 function buildContactListener() {
   const listener = new b2ContactListener();
 
@@ -403,16 +410,16 @@ function buildContactListener() {
 
   listener.BeginContact = (contact) => {
     const { dataA, dataB } = getData(contact);
-    if (dataA?.isPlayer) handlePlayerBegin(dataA, dataB);
-    if (dataB?.isPlayer) handlePlayerBegin(dataB, dataA);
+    if (dataA?.isPlayer) deferTile(dataB, () => { if (!dataA.dead) handlePlayerBegin(dataA, dataB); });
+    if (dataB?.isPlayer) deferTile(dataA, () => { if (!dataB.dead) handlePlayerBegin(dataB, dataA); });
     if (dataA?.isObject) handleObjectBegin(dataA, dataB);
     if (dataB?.isObject) handleObjectBegin(dataB, dataA);
   };
 
   listener.EndContact = (contact) => {
     const { dataA, dataB } = getData(contact);
-    if (dataA?.isPlayer) handlePlayerEnd(dataA, dataB);
-    if (dataB?.isPlayer) handlePlayerEnd(dataB, dataA);
+    if (dataA?.isPlayer) deferTile(dataB, () => handlePlayerEnd(dataA, dataB));
+    if (dataB?.isPlayer) deferTile(dataA, () => handlePlayerEnd(dataB, dataA));
     if (dataA?.isObject) handleObjectEnd(dataA, dataB);
     if (dataB?.isObject) handleObjectEnd(dataB, dataA);
   };

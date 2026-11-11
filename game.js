@@ -158,9 +158,14 @@ class Game {
   }
 
 step() {
-  this.moveBalls();
+  this.tickCount = (this.tickCount || 0) + 1;
+  // Same order as the real server: portal teleports and tile effects (boosts, bombs, team tiles...)
+  // from the previous step happen first, then the physics step, then key acceleration.
+  helper.runPendingTeleports();
+  helper.runPendingContacts();
   this.applyGravityWells();
   this.world.Step(this.timeStep, this.velIter, this.posIter);
+  this.moveBalls();
   this.syncPlayers();
 }
 
